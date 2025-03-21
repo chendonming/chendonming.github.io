@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>螺旋扩散搜索算法可视化</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 1px solid #333;
+            background-color: white;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>螺旋扩散搜索算法可视化</h1>
+    <div class="controls">
+        <button onclick="startSearch()">开始搜索</button>
+        <button onclick="resetGrid()">重置</button>
+    </div>
+    <div id="status" style="margin: 10px 0; padding: 10px; background-color: #f8f8f8; border-radius: 4px;">
+        <p>搜索步数: 0</p>
+        <p>已找到: 0/2 个目标</p>
+        <p>搜索时间: 0 秒</p>
+    </div>
+    <canvas id="canvas" width="600" height="600"></canvas>
+    <script src="script.js"></script>
+</body>
+</html>
