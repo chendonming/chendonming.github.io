@@ -87,7 +87,7 @@ function isTargetFound(point) {
     );
 }
 
-// 螺旋搜索
+// 螺旋搜索（生成器版本）
 function* spiralSearch() {
     const directions = [
         { x: 1, y: 0 },  // 右
@@ -134,6 +134,65 @@ function* spiralSearch() {
             return;
         }
     }
+}
+
+// 螺旋搜索（非生成器版本）
+function spiralSearchNonGenerator() {
+    const directions = [
+        { x: 1, y: 0 },  // 右
+        { x: 0, y: 1 },  // 下
+        { x: -1, y: 0 }, // 左
+        { x: 0, y: -1 }  // 上
+    ];
+    
+    const searchPath = [];
+    let x = startPoint.x;
+    let y = startPoint.y;
+    let directionIndex = 0;
+    let steps = 1;
+    let stepCount = 0;
+    let turnCount = 0;
+    
+    // 添加起点
+    searchPath.push({ x, y });
+    
+    while (searchPath.length < GRID_SIZE * GRID_SIZE) {
+        // 更新方向和步数
+        if (stepCount === steps) {
+            directionIndex = (directionIndex + 1) % 4;
+            stepCount = 0;
+            turnCount++;
+            
+            if (turnCount === 2) {
+                steps++;
+                turnCount = 0;
+            }
+        }
+        
+        // 计算下一个点
+        x += directions[directionIndex].x;
+        y += directions[directionIndex].y;
+        stepCount++;
+        
+        // 只有有效点才会被添加到搜索路径
+        if (isValidPoint({ x, y })) {
+            searchPath.push({ x, y });
+            
+            // 检查是否找到目标点
+            targetPoints.forEach((target, index) => {
+                if (target.x === x && target.y === y) {
+                    foundTargets.add(index);
+                }
+            });
+            
+            // 如果已经找到所有目标点，可以提前结束
+            if (foundTargets.size === targetPoints.length) {
+                break;
+            }
+        }
+    }
+    
+    return searchPath;
 }
 
 // 更新搜索状态显示
