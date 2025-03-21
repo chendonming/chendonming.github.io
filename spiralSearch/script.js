@@ -207,17 +207,95 @@ function startSearch() {
 
 // 重置网格
 function resetGrid() {
-    if (searchInterval) {
-        clearInterval(searchInterval);
-        searchInterval = null;
+    // 取消当前动画
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
     }
     
+    // 重置所有状态变量
     visitedPoints.clear();
+    foundTargets.clear();
     currentPoint = null;
+    searchSteps = 0;
+    searchStartTime = 0;
+    
+    // 重绘界面
     drawGrid();
     drawPoints();
+    updateSearchStatus();
 }
 
 // 初始化
 drawGrid();
 drawPoints();
+
+
+let isDragging = false;
+let draggedPoint = null;
+
+// 检查点击是否在某个点上
+function isPointClicked(mouseX, mouseY, point) {
+    const centerX = point.x * CELL_SIZE + CELL_SIZE / 2;
+    const centerY = point.y * CELL_SIZE + CELL_SIZE / 2;
+    const radius = CELL_SIZE / 3;
+    
+    return Math.sqrt(
+        Math.pow(mouseX - centerX, 2) +
+        Math.pow(mouseY - centerY, 2)
+    ) <= radius;
+}
+
+// 获取鼠标在网格上的位置
+function getGridPosition(mouseX, mouseY) {
+    const x = Math.floor(mouseX / CELL_SIZE);
+    const y = Math.floor(mouseY / CELL_SIZE);
+    return { x: Math.max(0, Math.min(x, GRID_SIZE - 1)), 
+             y: Math.max(0, Math.min(y, GRID_SIZE - 1)) };
+}
+
+// 鼠标事件处理
+canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // 检查是否点击了起点
+    if (isPointClicked(mouseX, mouseY, startPoint)) {
+        isDragging = true;
+        draggedPoint = 'start';
+        return;
+    }
+    
+    // 检查是否点击了目标点
+    targetPoints.forEach((target, index) => {
+        if (isPointClicked(mouseX, mouseY, target)) {
+            isDragging = true;
+            draggedPoint = index;
+            return;
+        }
+    });
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const newPos = getGridPosition(mouseX, mouseY);
+    
+    if (draggedPoint === 'start') {
+        startPoint = newPos;
+    } else if (typeof draggedPoint === 'number') {
+        targetPoints[draggedPoint] = newPos;
+    }
+    
+    drawGrid();
+    drawPoints();
+});
+
+canvas.addEventListener('mouseup', () => {
+    isDragging = false;
+    draggedPoint = null;
+});
