@@ -19,7 +19,8 @@ const params = {
     ambientColor: [0.1 * 255, 0.1 * 255, 0.1 * 255],
     diffuseColor: [4, 158, 244], // 0x049ef4
     specularColor: [255, 255, 255],
-    shininess: 30
+    shininess: 30,
+    showLightDirectionHelper: false // 添加控制辅助线的显示参数
 };
 
 // 添加光照方向控制
@@ -39,6 +40,9 @@ colorFolder.open();
 // 添加光泽度控制
 gui.add(params, 'shininess', 1, 100).onChange(updateShininess);
 
+// 添加显示光照方向辅助线的控制
+gui.add(params, 'showLightDirectionHelper').name('Show Light Helper').onChange(updateLightHelperVisibility);
+
 // 更新函数
 function updateLightDirection() {
     const dir = new THREE.Vector3(
@@ -47,6 +51,8 @@ function updateLightDirection() {
         params.lightDirection.z
     ).normalize();
     material.uniforms.uLightDirection.value.copy(dir);
+    // 更新辅助线方向
+    lightDirectionHelper.setDirection(dir);
 }
 
 function updateColors() {
@@ -69,6 +75,10 @@ function updateColors() {
 
 function updateShininess() {
     material.uniforms.uShininess.value = params.shininess;
+}
+
+function updateLightHelperVisibility(visible) {
+    lightDirectionHelper.visible = visible;
 }
 
 // 光线方向
@@ -144,6 +154,11 @@ const material = new THREE.ShaderMaterial({
 const cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
 camera.position.z = 5;
+
+// 创建光线方向辅助线
+const lightDirectionHelper = new THREE.ArrowHelper(lightDir, new THREE.Vector3(0, 0, 0), 3, 0xff0000);
+lightDirectionHelper.visible = params.showLightDirectionHelper; // 初始不可见
+scene.add(lightDirectionHelper);
 
 const animate = function () {
     requestAnimationFrame(animate);
