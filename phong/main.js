@@ -12,6 +12,65 @@ document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
+// 创建 GUI 控制面板
+const gui = new dat.GUI();
+const params = {
+    lightDirection: { x: 1, y: 1, z: 1 },
+    ambientColor: [0.1 * 255, 0.1 * 255, 0.1 * 255],
+    diffuseColor: [4, 158, 244], // 0x049ef4
+    specularColor: [255, 255, 255],
+    shininess: 30
+};
+
+// 添加光照方向控制
+const lightFolder = gui.addFolder('Light Direction');
+lightFolder.add(params.lightDirection, 'x', -1, 1).onChange(updateLightDirection);
+lightFolder.add(params.lightDirection, 'y', -1, 1).onChange(updateLightDirection);
+lightFolder.add(params.lightDirection, 'z', -1, 1).onChange(updateLightDirection);
+lightFolder.open();
+
+// 添加颜色控制
+const colorFolder = gui.addFolder('Colors');
+colorFolder.addColor(params, 'ambientColor').onChange(updateColors);
+colorFolder.addColor(params, 'diffuseColor').onChange(updateColors);
+colorFolder.addColor(params, 'specularColor').onChange(updateColors);
+colorFolder.open();
+
+// 添加光泽度控制
+gui.add(params, 'shininess', 1, 100).onChange(updateShininess);
+
+// 更新函数
+function updateLightDirection() {
+    const dir = new THREE.Vector3(
+        params.lightDirection.x,
+        params.lightDirection.y,
+        params.lightDirection.z
+    ).normalize();
+    material.uniforms.uLightDirection.value.copy(dir);
+}
+
+function updateColors() {
+    material.uniforms.uAmbientColor.value.setRGB(
+        params.ambientColor[0] / 255,
+        params.ambientColor[1] / 255,
+        params.ambientColor[2] / 255
+    );
+    material.uniforms.uDiffuseColor.value.setRGB(
+        params.diffuseColor[0] / 255,
+        params.diffuseColor[1] / 255,
+        params.diffuseColor[2] / 255
+    );
+    material.uniforms.uSpecularColor.value.setRGB(
+        params.specularColor[0] / 255,
+        params.specularColor[1] / 255,
+        params.specularColor[2] / 255
+    );
+}
+
+function updateShininess() {
+    material.uniforms.uShininess.value = params.shininess;
+}
+
 // 光线方向
 const lightDir = new THREE.Vector3(1, 1, 1).normalize();
 
