@@ -27,8 +27,6 @@ const depthMaterial = new THREE.ShaderMaterial({
         void main() {
             // 将深度值编码到 RGBA 中（由于 WebGL 1.0 的限制）
             float depth = gl_FragCoord.z / gl_FragCoord.w;
-            // 添加 bias
-            depth += 0.005;
             gl_FragColor = vec4(vec3(depth), 1.0);
         }
     `
@@ -144,7 +142,9 @@ const material = new THREE.ShaderMaterial({
             value: new THREE.Color(0xffffff)
         },
         uShadowMap: { value: depthRenderTarget.texture }, // 深度贴图
-        uLightMatrix: { value: new THREE.Matrix4() } // 光源的投影视图矩阵
+        uLightMatrix: { value: new THREE.Matrix4() }, // 光源的投影视图矩阵
+        uShadowMapSize: { value: new THREE.Vector2() },
+        uPCFRadius: {value: 1.0}
     },
     vertexShader: /* glsl */`
         varying vec3 vNormal;
@@ -174,17 +174,29 @@ const material = new THREE.ShaderMaterial({
         uniform sampler2D uShadowMap;
         uniform mat4 uLightMatrix;
         varying vec4 vWorldPosition;
+        uniform vec2 uShadowMapSize;
+        uniform float uPCFRadius;
 
         float unpackDepth(const in vec4 rgbaDepth) {
             const vec4 bitShift = vec4(1.0, 1.0/255.0, 1.0/(255.0*255.0), 1.0/(255.0*255.0*255.0));
             return dot(rgbaDepth, bitShift);
         }
 
-        float sampleShadowMap(sampler2D shadowMap, vec4 lightSpacePos) {
+       float sampleShadowMap(sampler2D shadowMap, vec4 lightSpacePos) {
             vec3 shadowCoord = (lightSpacePos.xyz / lightSpacePos.w) / 2.0 + 0.5;
-            float depth = unpackDepth(texture2D(shadowMap, shadowCoord.xy));
-            // 减去 bias
-            return step(shadowCoord.z - 0.005, depth);
+            float shadow = 0.0;
+            float texelSizeX = 1.0 / uShadowMapSize.x;
+            float texelSizeY = 1.0 / uShadowMapSize.y;
+            float radius = uPCFRadius;
+            int samples = int(2.0 * radius + 1.0);
+            for (int x = -int(radius); x <= int(radius); ++x) {
+                for (int y = -int(radius); y <= int(radius); ++y) {
+                    float pcfDepth = unpackDepth(texture2D(shadowMap, shadowCoord.xy + vec2(float(x) * texelSizeX, float(y) * texelSizeY)));
+                    shadow += step(shadowCoord.z - 0.005, pcfDepth);
+                }
+            }
+            shadow /= float(samples * samples);
+            return shadow;
         }
 
      void main() {
@@ -219,6 +231,7 @@ const material = new THREE.ShaderMaterial({
 
 const cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
+gui.add(material.uniforms.uPCFRadius, 'value', 0, 5, 1).name('PCF Radius');
 
 // 创建平面
 const planeGeometry = new THREE.PlaneGeometry(5, 5); // 假设平面大小为 5x5
@@ -244,6 +257,7 @@ const animate = function () {
     const lightMatrix = new THREE.Matrix4();
     lightMatrix.multiplyMatrices(lightCamera.projectionMatrix, lightCamera.matrixWorldInverse);
     material.uniforms.uLightMatrix.value.copy(lightMatrix);
+    material.uniforms.uShadowMapSize.value.set(window.innerWidth, window.innerHeight);
 
     // 1. 渲染深度贴图
     renderer.setRenderTarget(depthRenderTarget);
