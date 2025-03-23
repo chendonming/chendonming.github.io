@@ -34,7 +34,7 @@ const depthMaterial = new THREE.ShaderMaterial({
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -85,7 +85,7 @@ function updateLightDirection() {
     // 更新光源相机位置和朝向
     lightCamera.position.copy(dir.clone().multiplyScalar(5)); // 假设光源距离场景中心为 5
     lightCamera.lookAt(0, 0, 0);
-     // 更新光源的投影视图矩阵
+    // 更新光源的投影视图矩阵
     const lightMatrix = new THREE.Matrix4();
     lightMatrix.multiplyMatrices(lightCamera.projectionMatrix, lightCamera.matrixWorldInverse);
     material.uniforms.uLightMatrix.value.copy(lightMatrix);
@@ -144,7 +144,7 @@ const material = new THREE.ShaderMaterial({
         uShadowMap: { value: depthRenderTarget.texture }, // 深度贴图
         uLightMatrix: { value: new THREE.Matrix4() }, // 光源的投影视图矩阵
         uShadowMapSize: { value: new THREE.Vector2() },
-        uPCFRadius: {value: 1.0}
+        uPCFRadius: { value: 1.0 }
     },
     vertexShader: /* glsl */`
         varying vec3 vNormal;
