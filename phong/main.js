@@ -4,6 +4,36 @@ import {
     OrbitControls
 } from 'three/addons/controls/OrbitControls.js';
 
+// 创建光源相机
+const lightCamera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.5, 10);
+lightCamera.position.set(2, 4, 2); // 设置光源相机位置
+lightCamera.lookAt(0, 0, 0); // 让光源相机看向场景中心
+
+// 创建渲染目标
+const depthRenderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+    minFilter: THREE.NearestFilter,
+    magFilter: THREE.NearestFilter,
+    format: THREE.RGBAFormat
+});
+
+// 创建深度材质
+const depthMaterial = new THREE.ShaderMaterial({
+    vertexShader: /*glsl*/ `
+        void main() {
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: /*glsl*/ `
+        void main() {
+            // 将深度值编码到 RGBA 中（由于 WebGL 1.0 的限制）
+            float depth = gl_FragCoord.z / gl_FragCoord.w;
+            // 添加 bias
+            depth += 0.005;
+            gl_FragColor = vec4(vec3(depth), 1.0);
+        }
+    `
+});
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer();
@@ -53,6 +83,14 @@ function updateLightDirection() {
     material.uniforms.uLightDirection.value.copy(dir);
     // 更新辅助线方向
     lightDirectionHelper.setDirection(dir);
+
+    // 更新光源相机位置和朝向
+    lightCamera.position.copy(dir.clone().multiplyScalar(5)); // 假设光源距离场景中心为 5
+    lightCamera.lookAt(0, 0, 0);
+     // 更新光源的投影视图矩阵
+    const lightMatrix = new THREE.Matrix4();
+    lightMatrix.multiplyMatrices(lightCamera.projectionMatrix, lightCamera.matrixWorldInverse);
+    material.uniforms.uLightMatrix.value.copy(lightMatrix);
 }
 
 function updateColors() {
@@ -104,18 +142,22 @@ const material = new THREE.ShaderMaterial({
         },
         uLightColor: {
             value: new THREE.Color(0xffffff)
-        }
+        },
+        uShadowMap: { value: depthRenderTarget.texture }, // 深度贴图
+        uLightMatrix: { value: new THREE.Matrix4() } // 光源的投影视图矩阵
     },
     vertexShader: /* glsl */`
         varying vec3 vNormal;
-        // 观察空间位置
         varying vec3 vViewDir;
-    	void main() {
+        varying vec4 vWorldPosition;
+
+     void main() {
             vNormal = normalMatrix * normal;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             vViewDir = -mvPosition.xyz;
-    		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    	}
+            vWorldPosition = modelMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+     }
     `,
     fragmentShader: /* glsl */`
         #define RECIPROCAL_PI 0.3183098861837907
@@ -127,10 +169,33 @@ const material = new THREE.ShaderMaterial({
         uniform float uShininess;
         uniform vec3 uLightColor;
         varying vec3 vViewDir;
-    	void main() {
+
+        // 阴影相关
+        uniform sampler2D uShadowMap;
+        uniform mat4 uLightMatrix;
+        varying vec4 vWorldPosition;
+
+        float unpackDepth(const in vec4 rgbaDepth) {
+            const vec4 bitShift = vec4(1.0, 1.0/255.0, 1.0/(255.0*255.0), 1.0/(255.0*255.0*255.0));
+            return dot(rgbaDepth, bitShift);
+        }
+
+        float sampleShadowMap(sampler2D shadowMap, vec4 lightSpacePos) {
+            vec3 shadowCoord = (lightSpacePos.xyz / lightSpacePos.w) / 2.0 + 0.5;
+            float depth = unpackDepth(texture2D(shadowMap, shadowCoord.xy));
+            // 减去 bias
+            return step(shadowCoord.z - 0.005, depth);
+        }
+
+     void main() {
             vec3 N = normalize(vNormal);
             vec3 L = normalize(uLightDirection);
             vec3 V = normalize(vViewDir);
+
+            // 计算阴影
+            vec4 lightSpacePos = uLightMatrix * vWorldPosition;
+            float shadow = sampleShadowMap(uShadowMap, lightSpacePos);
+
 
             // 环境光分量
             vec3 ambient = uAmbientColor * uDiffuseColor;
@@ -145,15 +210,27 @@ const material = new THREE.ShaderMaterial({
             vec3 specular = uLightColor * uSpecularColor * spec;
             
             // 最终颜色合成
-            vec3 finalColor = ambient + diffuse + specular;
+            // vec3 finalColor = ambient + diffuse + specular; // 先不考虑阴影
+            vec3 finalColor = ambient + shadow * (diffuse + specular); // 考虑阴影
             gl_FragColor = vec4(finalColor, 1.0);
-    	}
+     }
     `
 })
 
 const cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
+
+// 创建平面
+const planeGeometry = new THREE.PlaneGeometry(5, 5); // 假设平面大小为 5x5
+const plane = new THREE.Mesh(planeGeometry, material);
+plane.position.set(0, -1, 0); // 放置在立方体下方
+plane.rotation.x = -Math.PI / 2; // 旋转平面以面向相机
+scene.add(plane);
+
 camera.position.z = 5;
+// 稍微调整下相机位置，并看向场景中心
+camera.position.y = 2;
+controls.target.set(0, 0, 0);
 
 // 创建光线方向辅助线
 const lightDirectionHelper = new THREE.ArrowHelper(lightDir, new THREE.Vector3(0, 0, 0), 3, 0xff0000);
@@ -162,8 +239,25 @@ scene.add(lightDirectionHelper);
 
 const animate = function () {
     requestAnimationFrame(animate);
-    controls.update();
+
+    // 更新光源的投影视图矩阵
+    const lightMatrix = new THREE.Matrix4();
+    lightMatrix.multiplyMatrices(lightCamera.projectionMatrix, lightCamera.matrixWorldInverse);
+    material.uniforms.uLightMatrix.value.copy(lightMatrix);
+
+    // 1. 渲染深度贴图
+    renderer.setRenderTarget(depthRenderTarget);
+    renderer.clear();
+    scene.overrideMaterial = depthMaterial; // 使用 depthMaterial 渲染场景
+    renderer.render(scene, lightCamera);
+    scene.overrideMaterial = null;
+
+    // 2. 使用 Phong shader 渲染场景
+    renderer.setRenderTarget(null);
     renderer.render(scene, camera);
+
+    controls.update();
+    // renderer.render(scene, camera);
 }
 
 animate();
