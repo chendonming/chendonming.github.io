@@ -12,6 +12,8 @@ body {
 
 .layout {
     display: flex;
+    height: 100%;
+    margin: 20px 40px;
 }
 
 h1 {
@@ -86,7 +88,6 @@ h1 {
 
 .color-preview label {
     margin-right: 16px;
-    width: 48px;
     color: #757575;
 }
 
@@ -147,7 +148,6 @@ h1 {
     border: 1px solid #ddd;
     text-align: left;
     overflow-y: auto;
-    height: 300px;
 }
 
 .preset-colors th {
@@ -155,5 +155,5 @@ h1 {
 }
 
 .preset-colors td:first-child {
-    width: 30px;
+    width: 100px;
 }
