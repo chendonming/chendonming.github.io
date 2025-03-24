@@ -168,6 +168,9 @@ function updateColors(source) {
       hslLInput.value = l;
     }
   }
+  
+  // 更新预览颜色
+  updatePreview('#' + hexInput.value);
 }
 
 // 事件监听器
@@ -182,12 +185,86 @@ glslRInput.addEventListener('input', () => updateColors('glsl'));
 glslGInput.addEventListener('input', () => updateColors('glsl'));
 glslBInput.addEventListener('input', () => updateColors('glsl'));
 
+// 获取颜色预览框元素
+const previewBox = document.getElementById('preview-box');
+
+// 更新颜色预览
+function updatePreview(color) {
+    previewBox.style.backgroundColor = color;
+}
+
+// 获取预设颜色元素
+const colorOptions = document.querySelectorAll('.color-option');
+
+// 预设颜色点击事件
+colorOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        const color = option.dataset.color;
+        hexInput.value = color.substring(1);
+        updateColors('hex');
+        updatePreview(color);
+    });
+});
+
 // 添加键盘事件监听器，支持 Enter 键
 const allInputs = document.querySelectorAll('input');
 allInputs.forEach(input => {
-  input.addEventListener('keydown', (event) => {
+    input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       updateColors(event.target.id.split('-')[0]); // 获取触发事件的输入框类型
     }
   });
 });
+
+// 创建表格
+const table = document.createElement('table');
+const thead = document.createElement('thead');
+const tbody = document.createElement('tbody');
+
+// 创建表头
+const headerRow = document.createElement('tr');
+const headers = ['颜色', '英文代码', '形象描述', 'HEX', 'RGB'];
+headers.forEach(headerText => {
+  const header = document.createElement('th');
+  header.textContent = headerText;
+  headerRow.appendChild(header);
+});
+thead.appendChild(headerRow);
+table.appendChild(thead);
+
+// 循环遍历颜色数据，创建表格行
+data.forEach(color => {
+  const row = document.createElement('tr');
+
+  // 颜色单元格
+  const colorCell = document.createElement('td');
+  colorCell.style.backgroundColor = color.hex;
+  row.appendChild(colorCell);
+
+  // 英文代码单元格
+  const englishCodeCell = document.createElement('td');
+  englishCodeCell.textContent = color.englishCode;
+  row.appendChild(englishCodeCell);
+
+  // 形象描述单元格
+  const descCell = document.createElement('td');
+  descCell.textContent = color.desc;
+  row.appendChild(descCell);
+
+  // HEX 单元格
+  const hexCell = document.createElement('td');
+  hexCell.textContent = color.hex;
+  row.appendChild(hexCell);
+
+  // RGB 单元格
+  const rgbCell = document.createElement('td');
+  rgbCell.textContent = color.rgb;
+  row.appendChild(rgbCell);
+
+  tbody.appendChild(row);
+});
+table.appendChild(tbody);
+
+// 将表格添加到页面中
+const colorTableContainer = document.getElementById('color-table-container');
+colorTableContainer.appendChild(table);
