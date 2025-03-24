@@ -1,0 +1,110 @@
+.color-picker {
+    position: relative;
+    display: inline-block;
+}
+
+.color-picker__preview {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.color-picker__dropdown-icon {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.color-picker__panel {
+    position: absolute;
+    top: 40px;
+    left: 0;
+    width: 280px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    padding: 10px;
+    display: none; /* Initially hidden */
+    z-index: 1000;
+}
+
+.color-picker__panel-content {
+    display: flex;
+    justify-content: space-between;
+}
+
+.color-picker__panel.show{
+    display: block;
+}
+
+.color-picker__area {
+    width: 200px;
+    height: 200px;
+    background-image: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent);
+    margin-bottom: 10px;
+    cursor: pointer;
+    position: relative;
+}
+
+.color-picker__area-indicator {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid #fff;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    transform: translate(-50%, -50%);
+}
+
+.color-picker__hue-slider {
+    width: 200px;
+    height: 15px;
+    background-image: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+    margin-bottom: 10px;
+    cursor: pointer;
+    position: relative;
+  
+}
+
+.color-picker__hue-indicator {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 13px;
+    height: 4px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.color-picker__hue-slider {
+  width: 15px;
+  height: 200px;
+  background-image: linear-gradient(to bottom, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  margin-bottom: 10px;
+  cursor: pointer;
+  position: relative;
+  margin-left: 10px;
+}
+
+.color-picker__controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.color-picker__input {
+    width: 70px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+}
+
+.color-picker__buttons button {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    cursor: pointer;
+}

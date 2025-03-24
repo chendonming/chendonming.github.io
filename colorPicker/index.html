@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Picker</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+</head>
+<body>
+    <div id="app">
+        <color-picker v-model="color"></color-picker>
+        <p>Selected Color: {{ color }}</p>
+    </div>
+    <script src="script.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                color: '#ff0000' // Initial color
+            }
+        });
+    </script>
+</body>
+</html>
