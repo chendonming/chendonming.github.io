@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step 3 (Revised): Material Uniforms with GUI</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        /* 让 GUI 悬浮在右上角 */
+        .lil-gui { position: absolute; top: 0; right: 0; }
+    </style>
+</head>
+<body>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- 基础设置 ---
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        // renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xcccccc);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const geometry = new THREE.SphereGeometry(1, 32, 32);
+
+        // --- GLSL 着色器代码 (与之前相同) ---
+        const vertexShader = `
+            varying vec3 vWorldPosition;
+            varying vec3 vWorldNormal;
+            varying vec3 vViewDirection;
+            void main() {
+                vec4 worldPosition4 = modelMatrix * vec4(position, 1.0);
+                vWorldPosition = worldPosition4.xyz;
+                vWorldNormal = normalize(normalMatrix * normal);
+                vViewDirection = normalize(cameraPosition - vWorldPosition);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+        const fragmentShader = `
+            varying vec3 vWorldPosition;
+            varying vec3 vWorldNormal;
+            varying vec3 vViewDirection;
+
+            uniform vec3 uBaseColor;
+            uniform float uMetallic;
+            uniform float uRoughness;
+
+            void main() {
+                // 测试：仍然输出基础颜色，但现在可以通过 GUI 改变
+                gl_FragColor = vec4(uBaseColor, 1.0);
+            }
+        `;
+
+        // --- PBR 参数对象 ---
+        const pbrParameters = {
+            baseColor: 0xff0000, // 初始红色 (十六进制)
+            metallic: 0.1,
+            roughness: 0.8
+        };
+
+        // --- ShaderMaterial (使用 pbrParameters 初始化 uniforms) ---
+        const material = new THREE.ShaderMaterial({
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            uniforms: {
+                uBaseColor: { value: new THREE.Color(pbrParameters.baseColor) }, // 从参数对象初始化
+                uMetallic: { value: pbrParameters.metallic },
+                uRoughness: { value: pbrParameters.roughness }
+            }
+        });
+
+        // --- 网格 (Mesh) ---
+        const sphere = new THREE.Mesh(geometry, material);
+        scene.add(sphere);
+
+        // --- GUI 设置 ---
+        const gui = new dat.GUI();
+
+        // 添加颜色控制器
+        gui.addColor(pbrParameters, 'baseColor')
+           .name('Base Color')
+           .onChange((value) => {
+               // 当 GUI 颜色改变时，更新 uniform 的值
+               material.uniforms.uBaseColor.value.set(value); // 使用 set 方法更新 THREE.Color
+           });
+
+        // 添加金属度滑块
+        gui.add(pbrParameters, 'metallic', 0.0, 1.0, 0.01) // 最小值0, 最大值1, 步长0.01
+           .name('Metallic')
+           .onChange((value) => {
+               material.uniforms.uMetallic.value = value; // 直接更新 float uniform
+           });
+
+        // 添加粗糙度滑块
+        gui.add(pbrParameters, 'roughness', 0.0, 1.0, 0.01)
+           .name('Roughness')
+           .onChange((value) => {
+               material.uniforms.uRoughness.value = value;
+           });
+
+        // --- 窗口大小调整处理 ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+
+        // --- 动画循环 ---
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+    </script>
+</body>
+</html>
