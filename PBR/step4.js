@@ -208,6 +208,10 @@ const fragmentShader = /* glsl */`
 
         // --- Gamma Correction (Handled by Three.js if renderer.outputColorSpace is SRGBColorSpace) ---
         // gl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(1.0/2.2));
+
+         // --- Tone Mapping (Potential future step) ---
+        // vec3 mapped = Lo / (Lo + vec3(1.0)); // Example: Reinhard tone mapping
+        // gl_FragColor = vec4(mapped, 1.0);
     }
 `;
 
@@ -236,7 +240,7 @@ const dirLightsData = [
   {
     direction: new THREE.Vector3(0.5, -1, -0.5).normalize(), // Coming from upper right back
     color: new THREE.Color(0xccccff), // Cool light
-    intensity: 0.5
+    intensity: 1.5
   }
 ];
 
