@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CSM Frustum Split Visualization</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      canvas {
+        border: 1px solid black;
+        margin-top: 10px;
+      }
+      .controls {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 5px 10px;
+        align-items: center;
+      }
+      label {
+        text-align: right;
+      }
+      input[type="range"] {
+        width: 200px;
+      }
+      .split-info {
+        margin-top: 15px;
+        font-size: 0.9em;
+      }
+      .split-info div {
+        margin-bottom: 5px;
+      }
+      .uniform {
+        color: red;
+      }
+      .logarithmic {
+        color: green;
+      }
+      .practical {
+        color: blue;
+      }
+      .legend span {
+        display: inline-block;
+        width: 15px;
+        height: 10px;
+        margin-right: 5px;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CSM 视锥体分割方法可视化</h1>
+
+    <div class="controls">
+      <label for="near">Near Plane:</label>
+      <input
+        type="range"
+        id="near"
+        name="near"
+        min="0.1"
+        max="10"
+        step="0.1"
+        value="1"
+      />
+      <span id="near-value">1.0</span>
+
+      <label for="far">Far Plane:</label>
+      <input
+        type="range"
+        id="far"
+        name="far"
+        min="50"
+        max="1000"
+        step="10"
+        value="500"
+      />
+      <span id="far-value">500</span>
+
+      <label for="cascades">Cascades (N):</label>
+      <input
+        type="range"
+        id="cascades"
+        name="cascades"
+        min="2"
+        max="8"
+        step="1"
+        value="4"
+      />
+      <span id="cascades-value">4</span>
+
+      <label for="lambda">Lambda (Practical):</label>
+      <input
+        type="range"
+        id="lambda"
+        name="lambda"
+        min="0"
+        max="1"
+        step="0.05"
+        value="0.5"
+      />
+      <span id="lambda-value">0.5</span>
+    </div>
+
+    <div class="legend">
+      <span style="background-color: red"></span
+      ><span class="uniform">Uniform</span> |
+      <span style="background-color: green"></span
+      ><span class="logarithmic">Logarithmic</span> |
+      <span style="background-color: blue"></span
+      ><span class="practical">Practical</span>
+    </div>
+
+    <canvas id="frustumCanvas" width="800" height="200"></canvas>
+
+    <div class="split-info">
+      <h3>计算出的分割点 (View Space Depth):</h3>
+      <div class="uniform">Uniform: <span id="uniform-splits"></span></div>
+      <div class="logarithmic">Logarithmic: <span id="log-splits"></span></div>
+      <div class="practical">
+        Practical: <span id="practical-splits"></span>
+      </div>
+    </div>
+
+    <script>
+      const canvas = document.getElementById("frustumCanvas");
+      const ctx = canvas.getContext("2d");
+      const nearSlider = document.getElementById("near");
+      const farSlider = document.getElementById("far");
+      const cascadesSlider = document.getElementById("cascades");
+      const lambdaSlider = document.getElementById("lambda");
+      const nearValueSpan = document.getElementById("near-value");
+      const farValueSpan = document.getElementById("far-value");
+      const cascadesValueSpan = document.getElementById("cascades-value");
+      const lambdaValueSpan = document.getElementById("lambda-value");
+      const uniformSplitsSpan = document.getElementById("uniform-splits");
+      const logSplitsSpan = document.getElementById("log-splits");
+      const practicalSplitsSpan = document.getElementById("practical-splits");
+
+      const frustumHeight = canvas.height;
+      const frustumTopY = 20;
+      const frustumBottomY = frustumHeight - 20;
+      const cameraX = 50; // X position of the camera point
+
+      function drawFrustum(near, far) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1;
+
+        // Map depth to canvas X coordinate
+        const mapDepthToX = (depth) => {
+          // Simple linear mapping for visualization
+          return (
+            cameraX +
+            ((canvas.width - cameraX - 30) * (depth - near)) / (far - near)
+          );
+        };
+
+        const nearX = mapDepthToX(near);
+        const farX = mapDepthToX(far);
+
+        // Draw frustum lines (simple trapezoid side view)
+        ctx.beginPath();
+        ctx.moveTo(cameraX, frustumHeight / 2); // Camera point
+        ctx.lineTo(nearX, frustumTopY);
+        ctx.moveTo(cameraX, frustumHeight / 2);
+        ctx.lineTo(nearX, frustumBottomY);
+
+        ctx.moveTo(nearX, frustumTopY);
+        ctx.lineTo(farX, frustumTopY * 0.5); // Far plane smaller in this view
+        ctx.moveTo(nearX, frustumBottomY);
+        ctx.lineTo(
+          farX,
+          frustumBottomY + (frustumHeight - frustumBottomY) * 0.5
+        );
+
+        // Draw Near and Far planes
+        ctx.moveTo(nearX, frustumTopY);
+        ctx.lineTo(nearX, frustumBottomY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(farX, frustumTopY * 0.5);
+        ctx.lineTo(
+          farX,
+          frustumBottomY + (frustumHeight - frustumBottomY) * 0.5
+        );
+        ctx.stroke();
+
+        // Add labels
+        ctx.fillStyle = "black";
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Near", nearX, frustumTopY - 5);
+        ctx.fillText(near.toFixed(1), nearX, frustumBottomY + 15);
+        ctx.fillText("Far", farX, frustumTopY * 0.5 - 5);
+        ctx.fillText(
+          far.toFixed(1),
+          farX,
+          frustumBottomY + (frustumHeight - frustumBottomY) * 0.5 + 15
+        );
+
+        return mapDepthToX;
+      }
+
+      function calculateSplits(near, far, N, lambda) {
+        const splits = { uniform: [], log: [], practical: [] };
+        splits.uniform.push(near); // Start with near plane
+        splits.log.push(near);
+        splits.practical.push(near);
+
+        for (let i = 1; i <= N; i++) {
+          // Uniform split
+          const splitUniform = near + (far - near) * (i / N);
+          splits.uniform.push(splitUniform);
+
+          // Logarithmic split
+          const splitLog = near * Math.pow(far / near, i / N);
+          splits.log.push(splitLog);
+
+          // Practical split (mix)
+          const splitPractical =
+            lambda * splitLog + (1 - lambda) * splitUniform;
+          splits.practical.push(splitPractical);
+        }
+        return splits;
+      }
+
+      function drawSplitLines(splits, mapDepthToX, color) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        // Skip the first element (near plane) and last (far plane) as they are drawn
+        for (let i = 1; i < splits.length - 1; i++) {
+          const depth = splits[i];
+          const x = mapDepthToX(depth);
+
+          // Interpolate Y position on the frustum lines for accuracy
+          const nearX = mapDepthToX(splits[0]); // near plane X
+          const farX = mapDepthToX(splits[splits.length - 1]); // far plane X
+
+          // Top line interpolation
+          const topYFar = frustumTopY * 0.5;
+          const topY =
+            frustumTopY +
+            ((topYFar - frustumTopY) * (x - nearX)) / (farX - nearX);
+
+          // Bottom line interpolation
+          const bottomYFar =
+            frustumBottomY + (frustumHeight - frustumBottomY) * 0.5;
+          const bottomY =
+            frustumBottomY +
+            ((bottomYFar - frustumBottomY) * (x - nearX)) / (farX - nearX);
+
+          ctx.moveTo(x, topY);
+          ctx.lineTo(x, bottomY);
+        }
+        ctx.stroke();
+      }
+
+      function updateVisualization() {
+        const near = parseFloat(nearSlider.value);
+        const far = parseFloat(farSlider.value);
+        const N = parseInt(cascadesSlider.value);
+        const lambda = parseFloat(lambdaSlider.value);
+
+        nearValueSpan.textContent = near.toFixed(1);
+        farValueSpan.textContent = far.toFixed(1);
+        cascadesValueSpan.textContent = N;
+        lambdaValueSpan.textContent = lambda.toFixed(2);
+
+        const mapDepthToX = drawFrustum(near, far);
+        const splits = calculateSplits(near, far, N, lambda);
+
+        drawSplitLines(splits.uniform, mapDepthToX, "red");
+        drawSplitLines(splits.log, mapDepthToX, "green");
+        drawSplitLines(splits.practical, mapDepthToX, "blue");
+
+        // Display split values numerically
+        const formatSplits = (arr) => arr.map((d) => d.toFixed(2)).join(", ");
+        uniformSplitsSpan.textContent = formatSplits(splits.uniform);
+        logSplitsSpan.textContent = formatSplits(splits.log);
+        practicalSplitsSpan.textContent = formatSplits(splits.practical);
+      }
+
+      // Initial draw
+      updateVisualization();
+
+      // Add event listeners
+      nearSlider.addEventListener("input", updateVisualization);
+      farSlider.addEventListener("input", updateVisualization);
+      cascadesSlider.addEventListener("input", updateVisualization);
+      lambdaSlider.addEventListener("input", updateVisualization);
+    </script>
+  </body>
+</html>
