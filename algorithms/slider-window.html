@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滑动窗口算法：最长无重复子串</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            color: #ffd700;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .visualization {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .string-display {
+            position: relative;
+            margin: 40px 0;
+            padding: 25px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: auto;
+        }
+        
+        .char-box {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: #4a5fc1;
+            color: white;
+            border-radius: 8px;
+            margin: 0 5px;
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .char-index {
+            position: absolute;
+            top: -25px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+        
+        .char-highlight {
+            background: #ffd700;
+            color: #1a1a2e;
+            transform: scale(1.1);
+        }
+        
+        .pointer {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.5s ease;
+        }
+        
+        .pointer-label {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        
+        .pointer-arrow {
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 20px solid #e74c3c;
+        }
+        
+        .left-pointer {
+            color: #3498db;
+        }
+        
+        .left-pointer .pointer-label {
+            background: #3498db;
+        }
+        
+        .left-pointer .pointer-arrow {
+            border-top-color: #3498db;
+        }
+        
+        .right-pointer {
+            color: #e74c3c;
+        }
+        
+        .window-highlight {
+            position: absolute;
+            height: 80px;
+            background: rgba(46, 204, 113, 0.3);
+            border: 3px solid #2ecc71;
+            border-radius: 10px;
+            transition: all 0.5s ease;
+        }
+        
+        .info-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin: 30px 0;
+        }
+        
+        .panel {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .panel h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+            display: flex;
+            align-items: center;
+        }
+        
+        .panel h2 i {
+            margin-right: 10px;
+        }
+        
+        .hash-table {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .hash-entry {
+            background: rgba(41, 128, 185, 0.3);
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 10px 15px;
+            min-width: 100px;
+        }
+        
+        .hash-key {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .hash-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .examples {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .example-btn {
+            padding: 8px 16px;
+            font-size: 1rem;
+        }
+        
+        .output {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.4rem;
+            background: rgba(46, 204, 113, 0.2);
+            border-radius: 15px;
+            margin-top: 20px;
+            border: 2px solid #2ecc71;
+        }
+        
+        .max-length {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .algorithm-steps {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        
+        .step {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+        }
+        
+        .step.active {
+            background: rgba(52, 152, 219, 0.3);
+            box-shadow: 0 0 0 2px #3498db;
+        }
+        
+        .step-number {
+            background: #ffd700;
+            color: #1a1a2e;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .info-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .char-box {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-window-restore"></i> 滑动窗口算法</h1>
+            <p class="subtitle">解决「最长无重复子串」问题 - LeetCode 第三题</p>
+        </header>
+        
+        <div class="visualization">
+            <div class="output">
+                当前最长无重复子串长度: <span class="max-length">0</span>
+            </div>
+            
+            <div class="string-display" id="stringDisplay">
+                <!-- String characters will be generated here -->
+            </div>
+            
+            <div class="info-panel">
+                <div class="panel">
+                    <h2><i class="fas fa-window-maximize"></i> 滑动窗口信息</h2>
+                    <div>
+                        <p>窗口左指针 (left): <span id="leftValue">0</span></p>
+                        <p>窗口右指针 (right): <span id="rightValue">0</span></p>
+                        <p>当前子串长度: <span id="currentLength">0</span></p>
+                        <p>当前子串: <span id="currentSubstring">""</span></p>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h2><i class="fas fa-table"></i> 字符位置表</h2>
+                    <div class="hash-table" id="hashTable">
+                        <!-- Hash table entries will be generated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="prevBtn"><i class="fas fa-step-backward"></i> 上一步</button>
+                <button id="nextBtn">下一步 <i class="fas fa-step-forward"></i></button>
+                <button id="autoBtn"><i class="fas fa-play"></i> 自动播放</button>
+                <button id="resetBtn"><i class="fas fa-sync-alt"></i> 重置</button>
+            </div>
+            
+            <div class="examples">
+                <p>示例字符串:</p>
+                <button class="example-btn" data-string="abcabcbb">abcabcbb</button>
+                <button class="example-btn" data-string="bbbbb">bbbbb</button>
+                <button class="example-btn" data-string="pwwkew">pwwkew</button>
+                <button class="example-btn" data-string="aab">aab</button>
+                <button class="example-btn" data-string="dvdf">dvdf</button>
+            </div>
+        </div>
+        
+        <div class="algorithm-steps">
+            <h2><i class="fas fa-list-ol"></i> 算法步骤说明</h2>
+            <div class="step" id="step1">
+                <div class="step-number">1</div>
+                <div>初始化左指针(left=0)，右指针(right=0)，最大长度(maxLen=0)和字符位置表(hash table)</div>
+            </div>
+            <div class="step" id="step2">
+                <div class="step-number">2</div>
+                <div>右指针right向右移动一位，指向当前字符</div>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-number">3</div>
+                <div>检查当前字符是否在字符位置表中，并且其位置是否大于等于left（即在当前窗口内）</div>
+            </div>
+            <div class="step" id="step4">
+                <div class="step-number">4</div>
+                <div>如果步骤3为真，则移动left到重复字符位置的下一个位置</div>
+            </div>
+            <div class="step" id="step5">
+                <div class="step-number">5</div>
+                <div>在字符位置表中记录/更新当前字符的位置</div>
+            </div>
+            <div class="step" id="step6">
+                <div class="step-number">6</div>
+                <div>计算当前子串长度（right - left + 1）并更新maxLen</div>
+            </div>
+            <div class="step" id="step7">
+                <div class="step-number">7</div>
+                <div>重复步骤2-6直到right遍历完整个字符串</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>滑动窗口算法 | 时间复杂度: O(n) | 空间复杂度: O(min(m, n))</p>
+            <p>m为字符集大小，n为字符串长度</p>
+        </div>
+    </div>
+
+    <script>
+        class LongestSubstringVisualizer {
+            constructor() {
+                this.s = "abcabcbb";
+                this.maxLen = 0;
+                this.left = 0;
+                this.right = -1;
+                this.charMap = {};
+                this.dom = {
+                    stringDisplay: document.getElementById('stringDisplay'),
+                    leftValue: document.getElementById('leftValue'),
+                    rightValue: document.getElementById('rightValue'),
+                    currentLength: document.getElementById('currentLength'),
+                    currentSubstring: document.getElementById('currentSubstring'),
+                    maxLength: document.querySelector('.max-length'),
+                    hashTable: document.getElementById('hashTable')
+                };
+                
+                this.init();
+                this.setupEventListeners();
+                this.renderString();
+                this.updateVisuals();
+            }
+            
+            init() {
+                this.stepNum = 1;
+                this.isAutoPlaying = false;
+                this.autoPlayInterval = null;
+                this.updateStepHighlight();
+            }
+            
+            renderString() {
+                this.dom.stringDisplay.innerHTML = '';
+                
+                // 移除现有的window highlight元素
+                const existingHighlight = document.querySelector('.window-highlight');
+                if (existingHighlight) {
+                    existingHighlight.remove();
+                }
+                
+                // 移除现有的指针
+                const existingPointers = document.querySelectorAll('.pointer');
+                existingPointers.forEach(p => p.remove());
+                
+                // 创建字符串字符
+                for (let i = 0; i < this.s.length; i++) {
+                    const charBox = document.createElement('div');
+                    charBox.classList.add('char-box');
+                    charBox.textContent = this.s[i];
+                    charBox.dataset.index = i;
+                    
+                    const indexLabel = document.createElement('div');
+                    indexLabel.classList.add('char-index');
+                    indexLabel.textContent = i;
+                    charBox.appendChild(indexLabel);
+                    
+                    this.dom.stringDisplay.appendChild(charBox);
+                }
+                
+                // 创建高亮窗口
+                this.windowHighlight = document.createElement('div');
+                this.windowHighlight.classList.add('window-highlight');
+                this.dom.stringDisplay.appendChild(this.windowHighlight);
+                
+                // 创建左指针
+                this.leftPointer = document.createElement('div');
+                this.leftPointer.classList.add('pointer', 'left-pointer');
+                this.leftPointer.innerHTML = `
+                    <div class="pointer-label">left</div>
+                    <div class="pointer-arrow"></div>
+                `;
+                this.dom.stringDisplay.appendChild(this.leftPointer);
+                
+                // 创建右指针
+                this.rightPointer = document.createElement('div');
+                this.rightPointer.classList.add('pointer', 'right-pointer');
+                this.rightPointer.innerHTML = `
+                    <div class="pointer-label">right</div>
+                    <div class="pointer-arrow"></div>
+                `;
+                this.dom.stringDisplay.appendChild(this.rightPointer);
+            }
+            
+            updateHashTable() {
+                this.dom.hashTable.innerHTML = '';
+                
+                // 创建新的哈希表展示
+                Object.keys(this.charMap).forEach(char => {
+                    const entry = document.createElement('div');
+                    entry.classList.add('hash-entry');
+                    
+                    const key = document.createElement('div');
+                    key.classList.add('hash-key');
+                    key.textContent = `字符: ${char}`;
+                    
+                    const value = document.createElement('div');
+                    value.classList.add('hash-value');
+                    value.textContent = `位置: ${this.charMap[char]}`;
+                    
+                    entry.appendChild(key);
+                    entry.appendChild(value);
+                    this.dom.hashTable.appendChild(entry);
+                });
+            }
+            
+            updateVisuals() {
+                if (this.s.length === 0) return;
+                
+                // 更新字符显示
+                const charBoxes = document.querySelectorAll('.char-box');
+                charBoxes.forEach((box, i) => {
+                    box.classList.remove('char-highlight');
+                    if (i === this.right) {
+                        box.classList.add('char-highlight');
+                    }
+                });
+                
+                // 更新指针位置
+                this.updatePointerPosition(this.leftPointer, this.left);
+                this.updatePointerPosition(this.rightPointer, this.right);
+                
+                // 更新窗口高亮
+                if (this.left <= this.right) {
+                    const charBoxes = document.querySelectorAll('.char-box');
+                    const firstChar = charBoxes[0];
+                    const leftChar = charBoxes[this.left];
+                    const rightChar = charBoxes[this.right];
+                    
+                    if (firstChar && leftChar && rightChar) {
+                        const rect = firstChar.getBoundingClientRect();
+                        const leftRect = leftChar.getBoundingClientRect();
+                        const rightRect = rightChar.getBoundingClientRect();
+                        
+                        const containerRect = this.dom.stringDisplay.getBoundingClientRect();
+                        
+                        const leftPos = leftRect.left - containerRect.left;
+                        const rightPos = (rightRect.left - containerRect.left) + rect.width;
+                        
+                        this.windowHighlight.style.left = `${leftPos}px`;
+                        this.windowHighlight.style.width = `${rightPos - leftPos}px`;
+                    }
+                }
+                
+                // 更新信息面板
+                this.dom.leftValue.textContent = this.left;
+                this.dom.rightValue.textContent = this.right;
+                const currentLength = this.right >= this.left ? this.right - this.left + 1 : 0;
+                this.dom.currentLength.textContent = currentLength;
+                
+                const currentSubstring = this.right >= this.left ? 
+                    this.s.substring(this.left, this.right + 1) : "";
+                this.dom.currentSubstring.textContent = `"${currentSubstring}"`;
+                
+                this.dom.maxLength.textContent = this.maxLen;
+                
+                // 更新哈希表显示
+                this.updateHashTable();
+                
+                // 更新步骤高亮
+                this.updateStepHighlight();
+            }
+            
+            updatePointerPosition(pointer, index) {
+                if (index < 0 || index >= this.s.length) {
+                    pointer.style.visibility = 'hidden';
+                    return;
+                }
+                
+                pointer.style.visibility = 'visible';
+                const charBoxes = document.querySelectorAll('.char-box');
+                if (charBoxes[index]) {
+                    const charBox = charBoxes[index];
+                    const rect = charBox.getBoundingClientRect();
+                    const containerRect = this.dom.stringDisplay.getBoundingClientRect();
+                    
+                    const leftPos = (rect.left + rect.right) / 2 - containerRect.left;
+                    pointer.style.left = `${leftPos}px`;
+                }
+            }
+            
+            nextStep() {
+                if (this.right >= this.s.length - 1) {
+                    clearInterval(this.autoPlayInterval);
+                    this.isAutoPlaying = false;
+                    document.getElementById('autoBtn').innerHTML = '<i class="fas fa-play"></i> 自动播放';
+                    return;
+                }
+                
+                this.stepNum++;
+                if (this.stepNum > 7) this.stepNum = 2;
+                
+                this.right++;
+                
+                // 步骤3-4：处理重复字符
+                const currentChar = this.s[this.right];
+                if (currentChar in this.charMap && this.charMap[currentChar] >= this.left) {
+                    this.stepNum = 4;
+                    this.left = this.charMap[currentChar] + 1;
+                }
+                
+                // 步骤5：更新哈希表
+                this.charMap[currentChar] = this.right;
+                
+                // 步骤6：更新最大长度
+                const currentLength = this.right - this.left + 1;
+                if (currentLength > this.maxLen) {
+                    this.maxLen = currentLength;
+                }
+                
+                this.updateVisuals();
+            }
+            
+            prevStep() {
+                if (this.right <= -1) return;
+                
+                this.stepNum--;
+                if (this.stepNum < 1) this.stepNum = 1;
+                
+                // 复杂的回退逻辑，实际演示中简化处理
+                if (this.stepNum < 6) this.right--;
+                
+                if (this.right < 0) {
+                    this.left = 0;
+                    this.maxLen = 0;
+                    this.charMap = {};
+                    this.stepNum = 1;
+                }
+                
+                this.updateVisuals();
+            }
+            
+            reset() {
+                this.left = 0;
+                this.right = -1;
+                this.charMap = {};
+                this.maxLen = 0;
+                this.stepNum = 1;
+                this.updateVisuals();
+            }
+            
+            setString(s) {
+                this.s = s;
+                this.renderString();
+                this.reset();
+            }
+            
+            toggleAutoPlay() {
+                if (this.isAutoPlaying) {
+                    clearInterval(this.autoPlayInterval);
+                    document.getElementById('autoBtn').innerHTML = '<i class="fas fa-play"></i> 自动播放';
+                } else {
+                    this.autoPlayInterval = setInterval(() => {
+                        if (this.right >= this.s.length - 1) {
+                            clearInterval(this.autoPlayInterval);
+                            this.isAutoPlaying = false;
+                            document.getElementById('autoBtn').innerHTML = '<i class="fas fa-play"></i> 自动播放';
+                        } else {
+                            this.nextStep();
+                        }
+                    }, 1500);
+                    document.getElementById('autoBtn').innerHTML = '<i class="fas fa-pause"></i> 暂停播放';
+                }
+                this.isAutoPlaying = !this.isAutoPlaying;
+            }
+            
+            updateStepHighlight() {
+                // 移除所有步骤的active类
+                document.querySelectorAll('.step').forEach(step => {
+                    step.classList.remove('active');
+                });
+                
+                // 为当前步骤添加active类
+                const currentStep = document.getElementById(`step${this.stepNum}`);
+                if (currentStep) {
+                    currentStep.classList.add('active');
+                }
+            }
+            
+            setupEventListeners() {
+                document.getElementById('nextBtn').addEventListener('click', () => this.nextStep());
+                document.getElementById('prevBtn').addEventListener('click', () => this.prevStep());
+                document.getElementById('resetBtn').addEventListener('click', () => this.reset());
+                document.getElementById('autoBtn').addEventListener('click', () => this.toggleAutoPlay());
+                
+                document.querySelectorAll('.example-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.setString(btn.dataset.string);
+                    });
+                });
+            }
+        }
+        
+        // 初始化可视化器
+        document.addEventListener('DOMContentLoaded', () => {
+            const visualizer = new LongestSubstringVisualizer();
+        });
+    </script>
+</body>
+</html>
