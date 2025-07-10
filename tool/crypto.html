@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Encryption Tool</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2em auto; padding: 0 1em; }
+        textarea, pre { width: 100%; box-sizing: border-box; border: 1px solid #ccc; padding: 8px; margin: 0.5em 0; font-family: monospace; }
+        textarea { min-height: 100px; }
+        #encrypted-data-input { min-height: 150px; background-color: #f0f0f0; }
+        pre { min-height: 150px; white-space: pre-wrap; word-wrap: break-word; background-color: #f0f0f0; border-left: 4px solid #666; }
+        button { padding: 10px 15px; margin-right: 10px; cursor: pointer; margin-top: 1em; }
+        .section { border-top: 2px solid #eee; margin-top: 2em; padding-top: 1em; }
+        label { font-weight: bold; display: block; margin-top: 1em; }
+    </style>
+</head>
+<body>
+    <h1>非对称混合加密工具 (Web Crypto API)</h1>
+    <p>所有操作均在浏览器本地完成。</p>
+
+    <div class="section">
+        <h2>1. 密钥管理 (PEM 格式)</h2>
+        <p>您可以生成新的密钥对，或粘贴您已有的 PEM 格式密钥。</p>
+        <button id="generateKeysBtn">生成新密钥对并填充下方</button>
+        
+        <label for="publicKeyPem">RSA 公钥 (PEM 格式):</label>
+        <textarea id="publicKeyPem" rows="8"></textarea>
+
+        <label for="privateKeyPem">RSA 私钥 (PEM 格式):</label>
+        <textarea id="privateKeyPem" rows="15"></textarea>
+    </div>
+
+    <div class="section">
+        <h2>2. 加密操作</h2>
+        <label for="plaintext">输入明文:</label>
+        <textarea id="plaintext">Hello, this is a secret message for testing the hybrid encryption system!</textarea>
+        <button id="encryptBtn">使用上方公钥加密</button>
+    </div>
+
+    <div class="section">
+        <h2>3. 解密操作</h2>
+        
+        <h4>统计信息 (加密时生成):</h4>
+        <p>
+            原始大小: <strong id="stat-original">N/A</strong> 字节 |
+            压缩后大小: <strong id="stat-compressed">N/A</strong> 字节 |
+            最终负载大小: <strong id="stat-final">N/A</strong> 字节
+        </p>
+
+        <label for="encrypted-data-input">加密后的数据包 (可粘贴于此进行解密):</label>
+        <textarea id="encrypted-data-input"></textarea>
+
+        <button id="decryptBtn">使用上方私钥解密</button>
+        
+        <h4>解密后的原文:</h4>
+        <pre id="decrypted-output"></pre>
+    </div>
+
+    <script type="module" src="crypto.main.js"></script>
+</body>
+</html>
