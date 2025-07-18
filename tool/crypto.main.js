@@ -4,7 +4,8 @@ import {
     encrypt, 
     decrypt,
     pemToArrayBuffer,
-    arrayBufferToPem
+    arrayBufferToPem,
+    copyToClipboardLegacy
 } from './crypto-util.js';
 
 // --- DOM 元素 ---
@@ -19,8 +20,16 @@ const decryptedOutputEl = document.getElementById('decrypted-output');
 const statOriginalEl = document.getElementById('stat-original');
 const statCompressedEl = document.getElementById('stat-compressed');
 const statFinalEl = document.getElementById('stat-final');
+const copyBtn = document.getElementById('copy-button');
 
 // --- 事件监听 ---
+
+copyBtn.addEventListener('click', (e) => {
+    const dom = document.getElementById('decrypted-output');
+    if (dom) {
+        copyToClipboardLegacy(dom.innerText);
+    }
+})
 
 generateKeysBtn.addEventListener('click', async () => {
     try {

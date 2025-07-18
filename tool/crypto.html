@@ -13,6 +13,7 @@
         button { padding: 10px 15px; margin-right: 10px; cursor: pointer; margin-top: 1em; }
         .section { border-top: 2px solid #eee; margin-top: 2em; padding-top: 1em; }
         label { font-weight: bold; display: block; margin-top: 1em; }
+        .copy button { float: right; }
     </style>
 </head>
 <body>
@@ -54,7 +55,10 @@
         <button id="decryptBtn">使用上方私钥解密</button>
         
         <h4>解密后的原文:</h4>
-        <pre id="decrypted-output"></pre>
+        <div class="copy">
+            <button id="copy-button">📋</button>
+            <pre id="decrypted-output"></pre>
+        </div>
     </div>
 
     <script type="module" src="crypto.main.js"></script>

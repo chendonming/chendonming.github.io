@@ -146,8 +146,8 @@ export async function decrypt(encryptedPackageJson, rsaPrivateKey) {
             writer.close();
             finalData = await new Response(ds.readable).arrayBuffer();
         } catch (e) {
-             console.error("Decompression failed.", e);
-             throw new Error("Decompression failed.");
+            console.error("Decompression failed.", e);
+            throw new Error("Decompression failed.");
         }
     }
 
@@ -156,4 +156,37 @@ export async function decrypt(encryptedPackageJson, rsaPrivateKey) {
     stats.originalSize = textEncoder.encode(decryptedText).length;
 
     return { decryptedText, stats };
+}
+
+export function copyToClipboardLegacy(text) {
+    // 创建临时文本框
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+
+    // 隐藏文本框（不移出屏幕避免移动端问题）
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = 0;
+
+    // 将文本框添加到 DOM
+    document.body.appendChild(textarea);
+
+    // 选中文本
+    textarea.select();
+    textarea.setSelectionRange(0, 99999); // 适配移动端
+
+    try {
+        // 执行复制命令
+        const successful = document.execCommand('copy');
+        if (!successful) {
+            throw new Error('复制命令失败');
+        }
+        console.log('复制成功');
+        // 这里可以添加成功后的回调逻辑
+    } catch (err) {
+        console.error('复制失败:', err);
+        // 这里可以添加错误处理逻辑
+    } finally {
+        // 清理 DOM
+        document.body.removeChild(textarea);
+    }
 }
